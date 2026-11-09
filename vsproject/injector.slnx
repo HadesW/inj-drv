@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Solution>
+  <!-- 只保留 x64：内核工程（ldk/crtsys/injdrv）只有 x64 配置，解决方案里再声明
+       Win32 会让 VS 切到 Win32 时把它们标成"不兼容"。 -->
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Project Path="ldk.vcxproj" Id="59a783fc-a3f8-4d06-964c-916d1bc95ae0" />
+  <Project Path="crtsys.vcxproj" Id="8c50c9c4-6351-42f1-bd9e-0c38a18b82b6">
+    <BuildDependency Project="ldk.vcxproj" />
+  </Project>
+  <Project Path="..\src\drv\injdrv.vcxproj" Id="5dda0233-975b-474b-846a-c65e6fbbd263">
+    <BuildDependency Project="crtsys.vcxproj" />
+    <BuildDependency Project="ldk.vcxproj" />
+  </Project>
+  <Project Path="..\src\app\test-dll\test-dll.vcxproj" Id="23d92fd5-5d1e-4a25-bd1c-92ddac240a6d" />
+  <Project Path="..\src\app\test-load\test-load.vcxproj" DefaultStartup="true" Id="2954f62a-b925-4e1b-a23e-b81cf6a8d079" />
+  <Project Path="..\src\app\test-ui\test-ui.vcxproj" Id="737cd96c-9f3a-422d-b65a-df85bd7dca61" />
+</Solution>

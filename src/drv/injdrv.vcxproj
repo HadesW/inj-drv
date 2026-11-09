@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Kernel driver (WDM) using crtsys in NTL WDM mode: the crtsys entry point
+  CrtSysDriverEntry calls the user's ntl::main(ntl::driver&, const std::wstring&)
+  defined in main.cpp.
+  Settings follow the official crtsys VS examples and crtsys.targets:
+    CRTSYS_USE_NTL_MAIN, _KERNEL32_, _ITERATOR_DEBUG_LEVEL=0, CRTSYS_USE_LIBCNTPR,
+    adjust_link_order forced include, /FORCE:MULTIPLE, WDK km libraries.
+-->
+<Project DefaultTargets="Build" ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5DDA0233-975B-474B-846A-C65E6FBBD263}</ProjectGuid>
+    <RootNamespace>injdrv</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.28000.0</WindowsTargetPlatformVersion>
+    <!-- Windows 10 RS5 header baseline, as in the crtsys VS examples. -->
+    <_NT_TARGET_VERSION>0xA000006</_NT_TARGET_VERSION>
+    <!-- crtsys uses C++ exceptions (/EHsc), which the WDK /kernel flag forbids. -->
+    <DisableKernelFlag>true</DisableKernelFlag>
+  </PropertyGroup>
+  <PropertyGroup Label="InjectorPaths">
+    <CrtSysRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\third\crtsys\'))</CrtSysRoot>
+    <SharedRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\shared\'))</SharedRoot>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)'=='Debug'">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <DriverType>WDM</DriverType>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <SignMode>Off</SignMode>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)'=='Release'">
+    <TargetVersion>Windows10</TargetVersion>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <DriverTargetPlatform>Desktop</DriverTargetPlatform>
+    <DriverType>WDM</DriverType>
+    <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
+    <ConfigurationType>Driver</ConfigurationType>
+    <SignMode>Off</SignMode>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="Exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <PropertyGroup>
+    <TargetName>injdrv</TargetName>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- All projects share one cache\ and bin\ tree under the injector folder. -->
+    <InjectorOutDir>$(SolutionDir)..\bin\</InjectorOutDir>
+    <InjectorCacheDir>$(SolutionDir)..\cache\</InjectorCacheDir>
+    <OutDir>$(InjectorOutDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(InjectorCacheDir)$(MSBuildProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <!-- MSVC and Windows SDK directories precede the WDK km\crt directory appended via %(...), as in crtsys.targets. -->
+      <AdditionalIncludeDirectories>$(CrtSysRoot)include;$(CrtSysRoot)include\.internal\msvc\143;$(CrtSysRoot)include\.internal\msvc\143\stl;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SharedRoot);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalOptions>/external:I "$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared" /external:I "$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\km" /external:I "$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\km\crt" /Zc:__cplusplus /utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <ForcedIncludeFiles>$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared\warning.h;$(CrtSysRoot)include\.internal\adjust_link_order;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <PreprocessorDefinitions>CRTSYS_USE_NTL_MAIN;_KERNEL32_;_ITERATOR_DEBUG_LEVEL=0;CRTSYS_USE_LIBCNTPR;_HAS_EXCEPTIONS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <!-- Builtin wchar_t, as required by crtsys (see crtsys.targets). -->
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <WarningLevel>Level4</WarningLevel>
+    </ClCompile>
+    <Link>
+      <EntryPointSymbol>CrtSysDriverEntry</EntryPointSymbol>
+      <AdditionalDependencies>cng.lib;aux_klib.lib;wdmsec.lib;netio.lib;uuid.lib;libcntpr.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
+      <!-- /FORCE:MULTIPLE yields LNK4006 duplicate-symbol warnings (libcntpr vs crtsys); keep them non-fatal, as crtsys.targets does. -->
+      <TreatLinkerWarningAsErrors>false</TreatLinkerWarningAsErrors>
+    </Link>
+  </ItemDefinitionGroup>
+  <!-- 内核工程不定义 _DEBUG/NDEBUG，用项目宏标记构建类型，见 shared/protocol.hpp。 -->
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>INJDRV_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\vsproject\crtsys.vcxproj">
+      <Project>{8C50C9C4-6351-42F1-BD9E-0C38A18B82B6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\vsproject\ldk.vcxproj">
+      <Project>{59A783FC-A3F8-4D06-964C-916D1BC95AE0}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cmd\allow_stop.hpp" />
+    <ClInclude Include="cmd\inject.hpp" />
+    <ClInclude Include="cmd\ping.hpp" />
+    <ClInclude Include="cmd\restore.hpp" />
+    <ClInclude Include="dispatch.hpp" />
+    <ClInclude Include="globals.hpp" />
+    <ClInclude Include="inject\iat.hpp" />
+    <ClInclude Include="inject\jmp.hpp" />
+    <ClInclude Include="..\shared\logger.hpp" />
+    <ClInclude Include="match.hpp" />
+    <ClInclude Include="notify.hpp" />
+    <ClInclude Include="process.hpp" />
+    <ClInclude Include="shellcode.hpp" />
+    <ClInclude Include="target.hpp" />
+    <ClInclude Include="..\shared\protocol.hpp" />
+    <ClInclude Include="..\shared\xheader.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

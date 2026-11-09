@@ -1,0 +1,66 @@
+# Visual Studio / MSBuild
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+UpgradeLog*.htm
+_UpgradeReport_Files/
+*.VC.db
+*.VC.opendb
+ipch/
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+
+# Build outputs and intermediates
+**/bin/
+**/cache/
+**/obj/
+**/target/
+**/artifacts/
+x64/
+Win32/
+ARM64/
+Debug/
+Release/
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.iobj
+*.ipdb
+*.exp
+*.map
+*.tlog
+*.lastbuildstate
+*.recipe
+*.log
+*.dmp
+*.sys
+*.dll
+*.exe
+*.lib
+
+# Local dependencies and test harnesses
+**/third/
+**/tests/
+**/__pycache__/
+**/.pytest_cache/
+
+# Signing material and local secrets
+*.cer
+*.cat
+*.pvk
+*.pfx
+*.spc
+*.key
+*.p12
+*.snk
+
+# OS junk
+Thumbs.db
+Desktop.ini
+.DS_Store
